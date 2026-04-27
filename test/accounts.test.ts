@@ -132,8 +132,8 @@ describe("Account orderings", () => {
     expect(ACCOUNTS_KEEPER_CRANK).toHaveLength(4);
   });
 
-  it("ACCOUNTS_TRADE_NOCPI has 4 accounts (PERC-199: clock removed)", () => {
-    expect(ACCOUNTS_TRADE_NOCPI).toHaveLength(4);
+  it("ACCOUNTS_TRADE_NOCPI has 5 accounts (v12.19 wrapper at src/percolator.rs:8484)", () => {
+    expect(ACCOUNTS_TRADE_NOCPI).toHaveLength(5);
   });
 
   it("ACCOUNTS_LIQUIDATE_AT_ORACLE has 4 accounts", () => {
@@ -144,8 +144,8 @@ describe("Account orderings", () => {
     expect(ACCOUNTS_CLOSE_ACCOUNT).toHaveLength(8);
   });
 
-  it("ACCOUNTS_TOPUP_INSURANCE has 5 accounts", () => {
-    expect(ACCOUNTS_TOPUP_INSURANCE).toHaveLength(5);
+  it("ACCOUNTS_TOPUP_INSURANCE has 6 accounts (v12.19 wrapper at src/percolator.rs:9256)", () => {
+    expect(ACCOUNTS_TOPUP_INSURANCE).toHaveLength(6);
   });
 
   it("ACCOUNTS_TRADE_CPI has 8 accounts (v12.17: lpPda added)", () => {
@@ -161,8 +161,8 @@ describe("Account orderings", () => {
   });
 
 
-  it("ACCOUNTS_SET_ORACLE_PRICE_CAP has 2 accounts", () => {
-    expect(ACCOUNTS_SET_ORACLE_PRICE_CAP).toHaveLength(2);
+  it("ACCOUNTS_SET_ORACLE_PRICE_CAP has 3 accounts (v12.19 wrapper at src/percolator.rs:9654)", () => {
+    expect(ACCOUNTS_SET_ORACLE_PRICE_CAP).toHaveLength(3);
   });
 
   it("ACCOUNTS_PAUSE_MARKET has 2 accounts", () => {

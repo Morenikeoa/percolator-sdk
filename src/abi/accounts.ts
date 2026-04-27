@@ -106,12 +106,15 @@ export const ACCOUNTS_KEEPER_CRANK: readonly AccountSpec[] = [
 
 
 /**
- * TradeNoCpi: 4 accounts (PERC-199: clock sysvar removed — uses Clock::get() syscall)
+ * TradeNoCpi: 5 accounts.
+ * v12.19 wrapper at src/percolator.rs:8484 calls accounts::expect_len(5).
+ * Layout: [user(s+w), lp(s+w), slab(w), clock, oracle].
  */
 export const ACCOUNTS_TRADE_NOCPI: readonly AccountSpec[] = [
   { name: "user", signer: true, writable: true },
   { name: "lp", signer: true, writable: true },
   { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
   { name: "oracle", signer: false, writable: false },
 ] as const;
 
@@ -141,7 +144,9 @@ export const ACCOUNTS_CLOSE_ACCOUNT: readonly AccountSpec[] = [
 ] as const;
 
 /**
- * TopUpInsurance: 5 accounts
+ * TopUpInsurance: 6 accounts.
+ * v12.19 wrapper at src/percolator.rs:9256 calls accounts::expect_len(6).
+ * Layout: [user(s+w), slab(w), userAta(w), vault(w), tokenProgram, clock].
  */
 export const ACCOUNTS_TOPUP_INSURANCE: readonly AccountSpec[] = [
   { name: "user", signer: true, writable: true },
@@ -149,6 +154,7 @@ export const ACCOUNTS_TOPUP_INSURANCE: readonly AccountSpec[] = [
   { name: "userAta", signer: false, writable: true },
   { name: "vault", signer: false, writable: true },
   { name: "tokenProgram", signer: false, writable: false },
+  { name: "clock", signer: false, writable: false },
 ] as const;
 
 /**
@@ -214,11 +220,17 @@ export const ACCOUNTS_CLOSE_SLAB: readonly AccountSpec[] = [
 ] as const;
 
 /**
- * UpdateConfig: 2 accounts
+ * UpdateConfig: 3 accounts (canonical) or 4 (with oracle).
+ * v12.19 wrapper at src/percolator.rs:9544 accepts either.
+ * 3-account form: [admin(s+w), slab(w), clock].
+ * 4-account form: [admin(s+w), slab(w), clock, oracle] (used when the wrapper
+ * needs to re-read price during config commit). Default to the 3-account form;
+ * callers that need oracle re-reads should append the oracle account themselves.
  */
 export const ACCOUNTS_UPDATE_CONFIG: readonly AccountSpec[] = [
   { name: "admin", signer: true, writable: true },
   { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
 ] as const;
 
 /**
@@ -230,21 +242,26 @@ export const ACCOUNTS_SET_MAINTENANCE_FEE: readonly AccountSpec[] = [
 ] as const;
 
 /**
- * SetOraclePriceCap: 2 accounts
- * Set oracle price circuit breaker cap (admin only)
+ * SetOraclePriceCap: 3 accounts.
+ * v12.19 wrapper at src/percolator.rs:9654 calls accounts::expect_len(3).
+ * Layout: [admin(s+w), slab(w), clock].
  */
 export const ACCOUNTS_SET_ORACLE_PRICE_CAP: readonly AccountSpec[] = [
   { name: "admin", signer: true, writable: true },
   { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
 ] as const;
 
 /**
- * ResolveMarket: 2 accounts
- * Resolves a binary/premarket (admin only)
+ * ResolveMarket: 4 accounts.
+ * v12.19 wrapper at src/percolator.rs:9748 calls accounts::expect_len(4).
+ * Layout: [admin(s+w), slab(w), clock, oracle].
  */
 export const ACCOUNTS_RESOLVE_MARKET: readonly AccountSpec[] = [
   { name: "admin", signer: true, writable: true },
   { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
+  { name: "oracle", signer: false, writable: false },
 ] as const;
 
 /**
