@@ -2,7 +2,18 @@
 
 TypeScript SDK for building clients, bots, and UIs on top of the [Percolator](https://github.com/dcccrypto/percolator) perpetual futures protocol on Solana.
 
-> **EXPERIMENTAL. NOT AUDITED.** `1.0.0-beta.39-presync`. 826 tests passing. Do NOT use with real funds.
+> **EXPERIMENTAL. NOT AUDITED.** `2.0.0-rc.0`. 832 tests passing. Do NOT use with real funds.
+
+## Two flavors
+
+| import | scope | bundle |
+|:---|:---|:---|
+| `@percolatorct/sdk` | full surface (fork-extended encoders, NFT, LP vault, ADL, etc.) | 265 KB |
+| `@percolatorct/sdk/vanilla` | minimal v12.17.7 deployed line only | 28 KB |
+
+The vanilla subpath is for callers targeting unmodified Percolator
+deployments. See [VANILLA.md](./VANILLA.md) for the full subset and
+when to use it.
 
 ## Supported wrapper versions
 

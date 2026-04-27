@@ -7,6 +7,36 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.0-rc.0] — 2026-04-27
+
+Two-track package split. Adds `@percolatorct/sdk/vanilla` subpath with
+the minimal v12.17.7 deployed-line encoder surface (27 instructions,
+28 KB bundle). The default `@percolatorct/sdk` import is unchanged
+and continues to expose the full fork-extended surface.
+
+Major version bump because the new subpath export is part of the
+public API surface contract per SemVer §5.
+
+### Added
+
+- `src/vanilla.ts` entry point.
+- `package.json` `exports` field maps `./vanilla`.
+- `tsup.config.ts` emits `dist/vanilla.js` and `dist/vanilla.d.ts`.
+- `test/vanilla.test.ts` enforces export-set invariant against
+  `audit-2026-04-27/vanilla-subset.md`.
+- `VANILLA.md` documents the subset and when to use it.
+
+### Changed
+
+- README adds "two flavors" section.
+
+### Coverage
+
+Tests: 826 -> 832 PASS. 31 SKIPPED unchanged. Bundle sizes:
+`dist/index.js` 265 KB, `dist/vanilla.js` 28 KB.
+
+---
+
 ## [1.0.0-beta.39-presync] — 2026-04-27
 
 v12.19 forward-port + v12.20 prep. Cut on `sync/v12.19-sdk` branch

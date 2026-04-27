@@ -1,16 +1,14 @@
 # SDK audit — Heartbeat
 
-## STAGE I COMPLETE → starting STAGE II
+## STAGE II COMPLETE → starting STAGE III
 
-Cut 1.0.0-beta.38 on `main`. 809 PASS / 31 SKIPPED. STAGE_I_FINAL.md present.
+Cut 1.0.0-beta.39-presync on `sync/v12.19-sdk` (not pushed to npm).
+826 PASS / 31 SKIPPED. STAGE_II_FINAL.md present.
 
-5 missing encoders + 6 ACCOUNTS_ specs + 27 byte-level parity tests added.
-v12.19-only fixes (UpdateConfig 5-field variant, InitMarket 40-byte drift,
-PERC-628 shared vault tags 59-63) deferred to STAGE II.
+UpdateConfig + InitMarket now target-aware. PERC-628 tags 59-63 un-
+throw under `target='v12.19'`. v12.20-design-notes.md covers deferred
+upstream commits.
 
-Wrapper finding W-1 (sdk_parity_fixtures.rs missing tag 83) logged for
-next wrapper sync. Cannot push from this session per brief.
+## Stage III about to start
 
-## Stage II PHASE A about to start
-
-Recheck PR state for branch policy decision.
+Two-track package split. Decision recorded next.
