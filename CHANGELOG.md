@@ -7,6 +7,68 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.0-beta.38] — 2026-04-27
+
+Coverage and correctness audit on the v12.17.7 deployed line. Audit
+artifacts under `audit-2026-04-27/`. Wrapper baseline d760fc4
+(tag h-new-1-resolved).
+
+### Added
+
+- `encodeUpdateAuthority` (tag 83). v12.18.x 4-way authority split.
+  `AUTHORITY_KIND` const map with `Admin=0`, `HyperpMark=1`,
+  `Insurance=2`, `InsuranceOperator=4`. Wrapper anchor:
+  `src/percolator.rs:6876`.
+- `encodeReclaimEmptyAccount` (tag 25). Wrapper handler at
+  `src/percolator.rs:10470`. Permissionless §2.6 / §10.7.
+- `encodeSettleAccount` (tag 26). Wrapper handler at
+  `src/percolator.rs:10503`. Permissionless §10.2.
+- `encodeDepositFeeCredits` (tag 27). Wrapper handler at
+  `src/percolator.rs:10557`. Owner-only §10.3.1.
+- `encodeConvertReleasedPnl` (tag 28). Wrapper handler at
+  `src/percolator.rs:10636`. Owner-only §10.4.1.
+- `ACCOUNTS_RECLAIM_EMPTY_ACCOUNT`, `ACCOUNTS_SETTLE_ACCOUNT`,
+  `ACCOUNTS_DEPOSIT_FEE_CREDITS`, `ACCOUNTS_CONVERT_RELEASED_PNL`,
+  `ACCOUNTS_SET_INSURANCE_WITHDRAW_POLICY`, `ACCOUNTS_UPDATE_AUTHORITY`.
+- 27 byte-level parity tests under `test/parity/v12.17-encoder-bytes.parity.test.ts`
+  pinning encoder output against wrapper decode positions documented
+  in `audit-2026-04-27/borsh-audit.md`.
+- Coverage gate test enumerating the v12.17.7 reachable instruction
+  set and asserting every name has an `IX_TAG` entry.
+- `UpdateAuthority` entry in `specs/wrapper-tags.json` and the
+  `parity-fixtures.test.ts` `sdkMap`.
+
+### Changed
+
+- `encodeUpdateConfig` jsdoc now documents the v12.17 vs v12.19
+  wire format split. v12.17 stays at 33 bytes (4 funding fields).
+  v12.19 adds `tvl_insurance_cap_mult: u16` for 35-byte total per
+  wrapper commit `4ec51cc`. The v12.19 SDK target lands in beta.39.
+
+### Audit findings
+
+- 0 BLOCKING issues.
+- 2 HIGH (G-1 UpdateConfig drift v12.19-only, G-2 UpdateAuthority encoder
+  missing). G-2 fixed here. G-1 deferred to beta.39 (v12.19 target).
+- 4 MEDIUM (G-3 missing per-account encoders 25-28, G-5 deprecated-but-
+  handler-exists tags 59-63, G-6 wrapper parity binary missing tag 83,
+  G-7 zero parity coverage). G-3 + G-7 fixed here. G-5 deferred to
+  beta.39. G-6 logged at `audit-2026-04-27/wrapper-findings.md`.
+- 1 LOW (G-4 missing `ACCOUNTS_SET_INSURANCE_WITHDRAW_POLICY`). Fixed.
+- 11 deprecated-both-sides entries verified correct.
+
+### Wrapper findings
+
+`audit-2026-04-27/wrapper-findings.md` records one wrapper-side issue:
+`src/bin/sdk_parity_fixtures.rs` omits tag 83 UpdateAuthority. Cannot
+push wrapper from this session. Tracked for the next wrapper sync.
+
+### Coverage
+
+Tests: 782 -> 809 PASS. 31 SKIPPED unchanged.
+
+---
+
 ## [1.0.0-beta.33] — 2026-04-19
 
 ### Fixed
