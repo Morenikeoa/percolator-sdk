@@ -151,6 +151,12 @@ export const IX_TAG = {
   SetLpCollateralParams: 81,
   /** Phase E (2026-04-17): Accept a pending admin transfer. Signer must match pending_admin. */
   AcceptAdmin: 82,
+  /**
+   * v12.18.x 4-way authority split (added 2026-04-22, wrapper 86ea41f).
+   * Unified mutator for admin/hyperp_mark/insurance/insurance_operator.
+   * Wrapper handler: src/percolator.rs:6876.
+   */
+  UpdateAuthority: 83,
   // 78: removed (keeper fund)
 } as const;
 Object.freeze(IX_TAG);
@@ -2014,4 +2020,137 @@ export function encodeSetLpCollateralParams(args: SetLpCollateralParamsArgs): Ui
  */
 export function encodeAcceptAdmin(): Uint8Array {
   return encU8(IX_TAG.AcceptAdmin);
+}
+
+// ============================================================================
+// G-3 fixes (audit-2026-04-27): missing per-account encoders for tags 25-28.
+// Wrapper handlers exist at src/percolator.rs:2088, 2092, 2097, 2103.
+// ============================================================================
+
+/**
+ * ReclaimEmptyAccount (Tag 25) — permissionless reclamation of empty/dust
+ * accounts (wrapper §2.6, §10.7).
+ *
+ * Wrapper decode: src/percolator.rs:2088. Wire: tag(1) + user_idx u16(2).
+ *
+ * Accounts: see ACCOUNTS_RECLAIM_EMPTY_ACCOUNT.
+ */
+export interface ReclaimEmptyAccountArgs {
+  userIdx: number;
+}
+
+export function encodeReclaimEmptyAccount(args: ReclaimEmptyAccountArgs): Uint8Array {
+  return concatBytes(encU8(IX_TAG.ReclaimEmptyAccount), encU16(args.userIdx));
+}
+
+/**
+ * SettleAccount (Tag 26) — standalone account settlement (wrapper §10.2).
+ * Permissionless.
+ *
+ * Wrapper decode: src/percolator.rs:2092. Wire: tag(1) + user_idx u16(2).
+ *
+ * Accounts: see ACCOUNTS_SETTLE_ACCOUNT.
+ */
+export interface SettleAccountArgs {
+  userIdx: number;
+}
+
+export function encodeSettleAccount(args: SettleAccountArgs): Uint8Array {
+  return concatBytes(encU8(IX_TAG.SettleAccount), encU16(args.userIdx));
+}
+
+/**
+ * DepositFeeCredits (Tag 27) — direct fee-debt repayment (wrapper §10.3.1).
+ * Owner only.
+ *
+ * Wrapper decode: src/percolator.rs:2097. Wire: tag(1) + user_idx u16(2)
+ * + amount u64(8).
+ *
+ * Accounts: see ACCOUNTS_DEPOSIT_FEE_CREDITS.
+ */
+export interface DepositFeeCreditsArgs {
+  userIdx: number;
+  amount: bigint | string;
+}
+
+export function encodeDepositFeeCredits(args: DepositFeeCreditsArgs): Uint8Array {
+  return concatBytes(
+    encU8(IX_TAG.DepositFeeCredits),
+    encU16(args.userIdx),
+    encU64(args.amount),
+  );
+}
+
+/**
+ * ConvertReleasedPnl (Tag 28) — voluntary PnL conversion with open position
+ * (wrapper §10.4.1). Owner only.
+ *
+ * Wrapper decode: src/percolator.rs:2103. Wire: tag(1) + user_idx u16(2)
+ * + amount u64(8).
+ *
+ * Accounts: see ACCOUNTS_CONVERT_RELEASED_PNL.
+ */
+export interface ConvertReleasedPnlArgs {
+  userIdx: number;
+  amount: bigint | string;
+}
+
+export function encodeConvertReleasedPnl(args: ConvertReleasedPnlArgs): Uint8Array {
+  return concatBytes(
+    encU8(IX_TAG.ConvertReleasedPnl),
+    encU16(args.userIdx),
+    encU64(args.amount),
+  );
+}
+
+// ============================================================================
+// G-2 fix (audit-2026-04-27): UpdateAuthority (tag 83). v12.18.x 4-way split.
+// Wrapper: src/percolator.rs:6876 (handler), 2140-2146 (decode).
+// ============================================================================
+
+/**
+ * Authority kind for UpdateAuthority (tag 83). Maps to wrapper constants
+ * AUTHORITY_ADMIN/HYPERP_MARK/INSURANCE/INSURANCE_OPERATOR at
+ * src/percolator.rs:6862-6868.
+ *
+ * Note: kind=3 is reserved (the v12.18.x split uses 0/1/2/4).
+ */
+export const AUTHORITY_KIND = {
+  Admin: 0,
+  HyperpMark: 1,
+  Insurance: 2,
+  InsuranceOperator: 4,
+} as const;
+Object.freeze(AUTHORITY_KIND);
+
+export type AuthorityKind = (typeof AUTHORITY_KIND)[keyof typeof AUTHORITY_KIND];
+
+/**
+ * UpdateAuthority (Tag 83) — unified mutator for the four authority slots
+ * (admin, hyperp_mark, insurance, insurance_operator).
+ *
+ * The instruction takes both the current authority and the new authority as
+ * signers. Setting `newPubkey` to the zero pubkey burns the authority slot;
+ * burning admin requires `permissionless_resolve_stale_slots > 0` AND
+ * `force_close_delay_slots > 0` per the R4-H1 liveness guard.
+ *
+ * H-NEW-1 (closed in wrapper d760fc4): atomic admin rotation through this
+ * tag now clears `config.pending_admin`, invalidating any stale tag-12
+ * proposal.
+ *
+ * Wire: tag(1) + kind u8(1) + new_pubkey Pubkey(32) = 34 bytes.
+ *
+ * Accounts: see ACCOUNTS_UPDATE_AUTHORITY.
+ */
+export interface UpdateAuthorityArgs {
+  kind: AuthorityKind;
+  newPubkey: PublicKey | string;
+}
+
+export function encodeUpdateAuthority(args: UpdateAuthorityArgs): Uint8Array {
+  return concatBytes(
+    encU8(IX_TAG.UpdateAuthority),
+    encU8(args.kind),
+    encPubkey(args.newPubkey),
+  );
 }

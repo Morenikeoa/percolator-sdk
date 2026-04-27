@@ -299,6 +299,79 @@ export const ACCOUNTS_UNPAUSE_MARKET: readonly AccountSpec[] = [
 ] as const;
 
 // ============================================================================
+// G-3 / G-4 / G-2 fixes (audit-2026-04-27): missing ACCOUNTS_ specs.
+// Wrapper handlers at src/percolator.rs:10470 (reclaim), 10503 (settle),
+// 10557 (deposit_fee_credits), 10636 (convert_released_pnl), 9990
+// (set_insurance_withdraw_policy), 6876 (update_authority).
+// ============================================================================
+
+/**
+ * ReclaimEmptyAccount (tag 25): 2 accounts. Permissionless.
+ * Wrapper: src/percolator.rs:10470.
+ */
+export const ACCOUNTS_RECLAIM_EMPTY_ACCOUNT: readonly AccountSpec[] = [
+  { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
+] as const;
+
+/**
+ * SettleAccount (tag 26): 3 accounts. Permissionless.
+ * Wrapper: src/percolator.rs:10503.
+ */
+export const ACCOUNTS_SETTLE_ACCOUNT: readonly AccountSpec[] = [
+  { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
+  { name: "oracle", signer: false, writable: false },
+] as const;
+
+/**
+ * DepositFeeCredits (tag 27): 6 accounts. Owner only.
+ * Wrapper: src/percolator.rs:10557. SPL transfer requires userAta + vault writable.
+ */
+export const ACCOUNTS_DEPOSIT_FEE_CREDITS: readonly AccountSpec[] = [
+  { name: "user", signer: true, writable: true },
+  { name: "slab", signer: false, writable: true },
+  { name: "userAta", signer: false, writable: true },
+  { name: "vault", signer: false, writable: true },
+  { name: "tokenProgram", signer: false, writable: false },
+  { name: "clock", signer: false, writable: false },
+] as const;
+
+/**
+ * ConvertReleasedPnl (tag 28): 4 accounts. Owner only.
+ * Wrapper: src/percolator.rs:10636.
+ */
+export const ACCOUNTS_CONVERT_RELEASED_PNL: readonly AccountSpec[] = [
+  { name: "user", signer: true, writable: true },
+  { name: "slab", signer: false, writable: true },
+  { name: "clock", signer: false, writable: false },
+  { name: "oracle", signer: false, writable: false },
+] as const;
+
+/**
+ * SetInsuranceWithdrawPolicy (tag 22): 2 accounts. Admin only.
+ * Wrapper: src/percolator.rs:9990.
+ */
+export const ACCOUNTS_SET_INSURANCE_WITHDRAW_POLICY: readonly AccountSpec[] = [
+  { name: "admin", signer: true, writable: true },
+  { name: "slab", signer: false, writable: true },
+] as const;
+
+/**
+ * UpdateAuthority (tag 83, v12.18.x 4-way split): 3 accounts.
+ * Wrapper: src/percolator.rs:6876.
+ *
+ * Both the current authority and the new authority must sign. For burn
+ * (`new_pubkey == default()`) the new account is still passed but does
+ * not need to sign per wrapper L7036 region.
+ */
+export const ACCOUNTS_UPDATE_AUTHORITY: readonly AccountSpec[] = [
+  { name: "currentAuthority", signer: true, writable: false },
+  { name: "newAuthority", signer: true, writable: false },
+  { name: "slab", signer: false, writable: true },
+] as const;
+
+// ============================================================================
 // ACCOUNT META BUILDERS
 // ============================================================================
 
