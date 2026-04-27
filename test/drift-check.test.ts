@@ -672,10 +672,9 @@ describe("encoding roundtrip — manual decode verifies no endianness or off-by-
     }
   });
 
-  it("encodeInitMarket: new u128 fields survive bigint→bytes→bigint roundtrip", () => {
-    const DEPOSIT = 340282366920938463463374607431768211455n; // u128 max
+  it("encodeInitMarket: u128 tail fields survive bigint→bytes→bigint roundtrip", () => {
     const MM_REQ = 12345678901234567890n;
-    const IM_REQ = 1n;
+    const IM_REQ = 340282366920938463463374607431768211455n; // u128 max
     const data = encodeInitMarket({
       admin: PublicKey.default,
       collateralMint: PublicKey.default,
@@ -698,13 +697,12 @@ describe("encoding roundtrip — manual decode verifies no endianness or off-by-
       liquidationFeeCap: "0",
       liquidationBufferBps: "0",
       minLiquidationAbs: "0",
-      minInitialDeposit: DEPOSIT.toString(),
       minNonzeroMmReq: MM_REQ.toString(),
       minNonzeroImReq: IM_REQ.toString(),
     });
-    // v12.17: 8 bytes shorter (hMax padding removed), offsets shifted -8 from v12.15
-    expect(readU128LE(data, 296)).toBe(DEPOSIT);
-    expect(readU128LE(data, 312)).toBe(MM_REQ);
-    expect(readU128LE(data, 328)).toBe(IM_REQ);
+    // v12.19: 304-byte base, minInitialDeposit dropped. Tail = minNonzeroMmReq(16) + minNonzeroImReq(16) at offsets 272, 288.
+    expect(data.length).toBe(304);
+    expect(readU128LE(data, 272)).toBe(MM_REQ);
+    expect(readU128LE(data, 288)).toBe(IM_REQ);
   });
 });

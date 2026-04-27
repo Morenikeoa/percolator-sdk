@@ -14,12 +14,6 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
-    },
-    "./vanilla": {
-      "types": "./dist/vanilla.d.ts",
-      "import": "./dist/vanilla.js",
-      "require": "./dist/vanilla.js",
-      "default": "./dist/vanilla.js"
     }
   },
   "files": [

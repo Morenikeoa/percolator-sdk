@@ -129,7 +129,7 @@ describe("instruction encoders", () => {
     expect(data[0]).toBe(IX_TAG.InitLP);
   });
 
-  it("encodeInitMarket produces 352 bytes", () => {
+  it("encodeInitMarket produces 304-byte v12.19 base", () => {
     const data = encodeInitMarket({
       admin: PublicKey.unique(), collateralMint: PublicKey.unique(),
       indexFeedId: "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
@@ -139,9 +139,9 @@ describe("instruction encoders", () => {
       riskReductionThreshold: "1000000000", maintenanceFeePerSlot: "100",
       maxCrankStalenessSlots: "50", liquidationFeeBps: "100", liquidationFeeCap: "10000000",
       liquidationBufferBps: "50", minLiquidationAbs: "1000000",
-      minInitialDeposit: "500000", minNonzeroMmReq: "1000", minNonzeroImReq: "2000",
+      minNonzeroMmReq: "1000", minNonzeroImReq: "2000",
     });
-    expect(data.length).toBe(344);
+    expect(data.length).toBe(304);
     expect(data[0]).toBe(IX_TAG.InitMarket);
   });
 
@@ -183,9 +183,9 @@ describe("instruction encoders", () => {
       riskReductionThreshold: "1000000000", maintenanceFeePerSlot: "100",
       maxCrankStalenessSlots: "50", liquidationFeeBps: "100", liquidationFeeCap: "10000000",
       liquidationBufferBps: "50", minLiquidationAbs: "1000000",
-      minInitialDeposit: "500000", minNonzeroMmReq: "1000", minNonzeroImReq: "2000",
+      minNonzeroMmReq: "1000", minNonzeroImReq: "2000",
     });
-    expect(data.length).toBe(344);
+    expect(data.length).toBe(304);
   });
 
   it("encodeCloseSlab produces 1 byte", () => {
@@ -211,11 +211,8 @@ describe("instruction encoders", () => {
     expect(() => encodeUpdateMarkPrice()).toThrow(/tag 33/i);
     expect(() => encodeSetInsuranceIsolation({ bps: 1 })).toThrow(/tag 42/i);
     expect(() => encodeSlashCreationDeposit()).toThrow(/tag 58/i);
-    expect(() => encodeInitSharedVault({ epochDurationSlots: 1n, maxMarketExposureBps: 1 })).toThrow(/tag 59/i);
-    expect(() => encodeAllocateMarket({ amount: 1n })).toThrow(/tag 60/i);
-    expect(() => encodeQueueWithdrawalSV({ lpAmount: 1n })).toThrow(/tag 61/i);
-    expect(() => encodeClaimEpochWithdrawal()).toThrow(/tag 62/i);
-    expect(() => encodeAdvanceEpoch()).toThrow(/tag 63/i);
+    // PERC-628 shared-vault encoders (tags 59-63) are unconditionally enabled in v12.19.
+    // Their old "throw without target" gate was removed when the v12.17 dual-target was dropped.
   });
 });
 

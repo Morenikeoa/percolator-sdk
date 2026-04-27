@@ -1,10 +1,8 @@
 /**
- * v12.19 wrapper-target encoder byte parity (audit-2026-04-27 PHASE D).
+ * v12.19 encoder byte parity.
  *
- * Tests encoders that diverge between v12.17 and v12.19 wire formats.
- * v12.17 baseline coverage lives in v12.17-encoder-bytes.parity.test.ts.
- *
- * Wrapper target d760fc4 (PR #271).
+ * Wrapper target d760fc4 (PR #271, branch sync/v12.19-wrapper).
+ * Single-target SDK after audit-2026-04-28.
  */
 import { describe, it, expect } from "vitest";
 import { PublicKey } from "@solana/web3.js";
@@ -25,40 +23,27 @@ const ZERO_FEED = "0000000000000000000000000000000000000000000000000000000000000
 
 describe("v12.19 encoder byte parity", () => {
   describe("UpdateConfig (tag 14)", () => {
-    it("v12.17 default: 33 bytes (4 funding fields)", () => {
-      const data = encodeUpdateConfig({
-        fundingHorizonSlots: 100n,
-        fundingKBps: 5n,
-        fundingMaxPremiumBps: 200n,
-        fundingMaxBpsPerSlot: 10n,
-      });
-      expect(data.length).toBe(33);
-      expect(data[0]).toBe(IX_TAG.UpdateConfig);
-    });
-
-    it("v12.19 target: 35 bytes (adds tvl_insurance_cap_mult u16)", () => {
+    it("emits 35 bytes (4 funding fields + tvl_insurance_cap_mult u16)", () => {
       const data = encodeUpdateConfig({
         fundingHorizonSlots: 100n,
         fundingKBps: 5n,
         fundingMaxPremiumBps: 200n,
         fundingMaxBpsPerSlot: 10n,
         tvlInsuranceCapMult: 250,
-        target: 'v12.19',
       });
       expect(data.length).toBe(35);
       expect(data[0]).toBe(IX_TAG.UpdateConfig);
-      // tvlInsuranceCapMult = 250 = 0xFA00 LE -> [0xFA, 0x00]
+      // tvlInsuranceCapMult = 250 = 0x00FA LE -> [0xFA, 0x00]
       expect(data[33]).toBe(0xFA);
       expect(data[34]).toBe(0x00);
     });
 
-    it("v12.19 target with omitted tvlInsuranceCapMult defaults to 0", () => {
+    it("omitted tvlInsuranceCapMult defaults to 0", () => {
       const data = encodeUpdateConfig({
         fundingHorizonSlots: 0n,
         fundingKBps: 0n,
         fundingMaxPremiumBps: 0n,
         fundingMaxBpsPerSlot: 0n,
-        target: 'v12.19',
       });
       expect(data.length).toBe(35);
       expect(data[33]).toBe(0);
@@ -88,104 +73,66 @@ describe("v12.19 encoder byte parity", () => {
       liquidationFeeCap: 10_000_000n,
       liquidationBufferBps: 50n,
       minLiquidationAbs: 1_000_000n,
-      minInitialDeposit: 500_000n,
       minNonzeroMmReq: 1000n,
       minNonzeroImReq: 2000n,
     };
 
-    it("v12.17 default: 344-byte base payload", () => {
+    it("emits 304-byte v12.19 base payload", () => {
       const data = encodeInitMarket(baseArgs);
-      expect(data.length).toBe(344);
-      expect(data[0]).toBe(IX_TAG.InitMarket);
-    });
-
-    it("v12.19 target: 304-byte base payload (drops 40 bytes)", () => {
-      const data = encodeInitMarket({ ...baseArgs, target: 'v12.19' });
       expect(data.length).toBe(304);
       expect(data[0]).toBe(IX_TAG.InitMarket);
     });
 
-    it("v12.19 ignores maxInsuranceFloor + minOraclePriceCap + minInitialDeposit", () => {
-      const v17 = encodeInitMarket(baseArgs);
-      const v19 = encodeInitMarket({
+    it("ignores deprecated v12.17 fields (maxInsuranceFloor, minOraclePriceCap, minInitialDeposit)", () => {
+      const without = encodeInitMarket(baseArgs);
+      const withDeprecated = encodeInitMarket({
         ...baseArgs,
-        target: 'v12.19',
         maxInsuranceFloor: 99999n,
         minOraclePriceCap: 88888n,
         minInitialDeposit: 77777n,
       });
-      expect(v17.length - v19.length).toBe(40);
+      expect(without.length).toBe(304);
+      expect(withDeprecated.length).toBe(304);
+      expect(Buffer.from(without).equals(Buffer.from(withDeprecated))).toBe(true);
     });
   });
 
   describe("PERC-628 shared vault (tags 59-63)", () => {
-    it("InitSharedVault (tag 59) with v12.19 target encodes 11 bytes", () => {
+    it("InitSharedVault (tag 59) emits 11 bytes", () => {
       const data = encodeInitSharedVault({
         epochDurationSlots: 1000n,
         maxMarketExposureBps: 500,
-        target: 'v12.19',
       });
       expect(data.length).toBe(11);
       expect(data[0]).toBe(IX_TAG.InitSharedVault);
     });
 
-    it("InitSharedVault (tag 59) without target throws (v12.17 default)", () => {
-      expect(() =>
-        encodeInitSharedVault({
-          epochDurationSlots: 1000n,
-          maxMarketExposureBps: 500,
-        }),
-      ).toThrow();
-    });
-
-    it("AllocateMarket (tag 60) with v12.19 target encodes 17 bytes", () => {
-      const data = encodeAllocateMarket({
-        amount: 1_000_000_000n,
-        target: 'v12.19',
-      });
+    it("AllocateMarket (tag 60) emits 17 bytes", () => {
+      const data = encodeAllocateMarket({ amount: 1_000_000_000n });
       expect(data.length).toBe(17);
       expect(data[0]).toBe(IX_TAG.AllocateMarket);
     });
 
-    it("AllocateMarket (tag 60) without target throws", () => {
-      expect(() => encodeAllocateMarket({ amount: 1n })).toThrow();
-    });
-
-    it("QueueWithdrawalSV (tag 61) with v12.19 target encodes 9 bytes", () => {
-      const data = encodeQueueWithdrawalSV({
-        lpAmount: 1000n,
-        target: 'v12.19',
-      });
+    it("QueueWithdrawalSV (tag 61) emits 9 bytes", () => {
+      const data = encodeQueueWithdrawalSV({ lpAmount: 1000n });
       expect(data.length).toBe(9);
       expect(data[0]).toBe(IX_TAG.QueueWithdrawalSV);
     });
 
-    it("QueueWithdrawalSV (tag 61) without target throws", () => {
-      expect(() => encodeQueueWithdrawalSV({ lpAmount: 1n })).toThrow();
-    });
-
-    it("ClaimEpochWithdrawal (tag 62) with v12.19 target encodes 1 byte", () => {
-      const data = encodeClaimEpochWithdrawal({ target: 'v12.19' });
+    it("ClaimEpochWithdrawal (tag 62) emits 1 byte", () => {
+      const data = encodeClaimEpochWithdrawal();
       expect(data.length).toBe(1);
       expect(data[0]).toBe(IX_TAG.ClaimEpochWithdrawal);
     });
 
-    it("ClaimEpochWithdrawal (tag 62) without target throws", () => {
-      expect(() => encodeClaimEpochWithdrawal()).toThrow();
-    });
-
-    it("AdvanceEpoch (tag 63) with v12.19 target encodes 1 byte", () => {
-      const data = encodeAdvanceEpoch({ target: 'v12.19' });
+    it("AdvanceEpoch (tag 63) emits 1 byte", () => {
+      const data = encodeAdvanceEpoch();
       expect(data.length).toBe(1);
       expect(data[0]).toBe(IX_TAG.AdvanceEpoch);
     });
-
-    it("AdvanceEpoch (tag 63) without target throws", () => {
-      expect(() => encodeAdvanceEpoch()).toThrow();
-    });
   });
 
-  describe("v12.19-only IX_TAG sanity", () => {
+  describe("v12.19 IX_TAG sanity", () => {
     it("UpdateAuthority (tag 83) and PERC-628 tags are present", () => {
       expect(IX_TAG.UpdateAuthority).toBe(83);
       expect(IX_TAG.InitSharedVault).toBe(59);

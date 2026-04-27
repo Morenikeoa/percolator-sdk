@@ -2,37 +2,18 @@
 
 TypeScript SDK for building clients, bots, and UIs on top of the [Percolator](https://github.com/dcccrypto/percolator) perpetual futures protocol on Solana.
 
-> **EXPERIMENTAL. NOT AUDITED.** `2.0.0-rc.0`. 832 tests passing. Do NOT use with real funds.
+> **EXPERIMENTAL. NOT AUDITED.** `2.0.0-rc.1`. v12.19 single-target. Do NOT use with real funds.
 
-## Two flavors
+## Target wrapper
 
-| import | scope | bundle |
-|:---|:---|:---|
-| `@percolatorct/sdk` | full surface (fork-extended encoders, NFT, LP vault, ADL, etc.) | 265 KB |
-| `@percolatorct/sdk/vanilla` | minimal v12.17.7 deployed line only | 28 KB |
+The SDK targets the percolator v12.19 wrapper (PR #271, branch `sync/v12.19-wrapper`, commit `d760fc4`).
+All encoders emit v12.19 wire format. The dual-target `target: 'v12.17' | 'v12.19'` parameter
+present in 2.0.0-rc.0 has been removed. PERC-628 shared-vault encoders
+(`InitSharedVault`, `AllocateMarket`, `QueueWithdrawalSV`, `ClaimEpochWithdrawal`,
+`AdvanceEpoch`) are unconditionally enabled.
 
-The vanilla subpath is for callers targeting unmodified Percolator
-deployments. See [VANILLA.md](./VANILLA.md) for the full subset and
-when to use it.
-
-## Supported wrapper versions
-
-| target | wrapper SHA | status |
-|:---|:---|:---|
-| `v12.17` | mainnet deployed (v12.17.7) | default for all encoders |
-| `v12.19` | PR #271 wrapper `d760fc4` | opt-in via `target: 'v12.19'` argument on divergent encoders |
-
-Encoders whose wire format changed between v12.17 and v12.19 accept an
-optional `target?: WrapperTarget` parameter. Today this affects:
-- `encodeUpdateConfig` (v12.19 adds `tvlInsuranceCapMult: u16`).
-- `encodeInitMarket` (v12.19 drops `maxInsuranceFloor`, `minOraclePriceCap`,
-  `minInitialDeposit`. 304-byte base instead of 344).
-- `encodeInitSharedVault`, `encodeAllocateMarket`, `encodeQueueWithdrawalSV`,
-  `encodeClaimEpochWithdrawal`, `encodeAdvanceEpoch` (PERC-628 shared vault,
-  v12.19-only). Throws by default to preserve v12.17 safety.
-
-Slab layout detection autodetects up to v12.17 today. v12.19 layout
-detection lands in a follow-up release once tier sizes stabilize.
+Slab parsers retain V12_1 / V12_15 / V12_17 layout descriptors for backward-compatible
+reads of older deployments. V12_19 layout descriptor is added for fresh v12.19 slabs.
 
 [![npm](https://img.shields.io/npm/v/@percolator/sdk?color=14F195)](https://www.npmjs.com/package/@percolator/sdk)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)

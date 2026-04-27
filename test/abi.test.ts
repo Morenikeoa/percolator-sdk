@@ -393,7 +393,8 @@ console.log("\nTesting instruction encoders...\n");
     minNonzeroMmReq: "1000",
     minNonzeroImReq: "2000",
   });
-  assert(data.length === 344, `InitMarket length: expected 344, got ${data.length}`);
+  // v12.19 wrapper d760fc4: InitMarket base = 304 bytes (drops maxInsuranceFloor + minOraclePriceCap + minInitialDeposit vs v12.17's 344).
+  assert(data.length === 304, `InitMarket length: expected 304, got ${data.length}`);
   assert(data[0] === IX_TAG.InitMarket, "InitMarket tag byte");
   console.log("✓ encodeInitMarket");
 }
