@@ -1577,6 +1577,24 @@ for (const [label, n] of [["Small", 256], ["Medium", 1024], ["Large", 4096]] as 
 }
 
 /**
+ * V12_19 slab tier sizes (probe-confirmed via cargo build-sbf compile-time
+ * assertions on 2026-04-28). Used by `discoverMarkets` to filter program
+ * accounts by dataSize. Without this tier set, v12.19 slabs (the only kind
+ * the deployed mainnet program ESa89R5... produces post-2026-04-28 upgrade)
+ * fall through to the memcmp fallback path with no layout hint.
+ *
+ * Sizes derived from V12_19_SIZES Map (defined earlier in this file at the
+ * V12_19 layout block). Kept as Record for parity with other SLAB_TIERS_*
+ * exports consumed by discovery.ts.
+ */
+export const SLAB_TIERS_V12_19: Record<string, { maxAccounts: number; dataSize: number; label: string; description: string }> = {
+  micro:  { maxAccounts: 64,    dataSize: 26_848,    label: "Micro",  description: "64 slots (v12.19, --features micro)" },
+  small:  { maxAccounts: 256,   dataSize: 96_760,    label: "Small",  description: "256 slots (v12.19, --features small) — deployed mainnet ESa89R5..." },
+  medium: { maxAccounts: 1024,  dataSize: 376_408,   label: "Medium", description: "1024 slots (v12.19, --features medium)" },
+  large:  { maxAccounts: 4096,  dataSize: 1_495_000, label: "Large",  description: "4096 slots (v12.19, default features)" },
+};
+
+/**
  * Build a SlabLayout for V_SETDEXPOOL slabs (PERC-SetDexPool security fix).
  * ENGINE_OFF=632 (+8 from V_ADL=624 due to CONFIG_LEN growing 520→528).
  * All engine and account field offsets are identical to V_ADL.

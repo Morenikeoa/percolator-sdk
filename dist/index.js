@@ -2871,6 +2871,12 @@ for (const [label, n] of [["Small", 256], ["Medium", 1024], ["Large", 4096]]) {
   const size = V12_17_ENGINE_OFF_SBF + accountsOff + n * V12_17_ACCOUNT_SIZE_SBF + V12_17_RISK_BUF_LEN + n * V12_17_GEN_TABLE_ENTRY;
   SLAB_TIERS_V12_17[label.toLowerCase()] = { maxAccounts: n, dataSize: size, label, description: `${n} slots (v12.17)` };
 }
+var SLAB_TIERS_V12_19 = {
+  micro: { maxAccounts: 64, dataSize: 26848, label: "Micro", description: "64 slots (v12.19, --features micro)" },
+  small: { maxAccounts: 256, dataSize: 96760, label: "Small", description: "256 slots (v12.19, --features small) \u2014 deployed mainnet ESa89R5..." },
+  medium: { maxAccounts: 1024, dataSize: 376408, label: "Medium", description: "1024 slots (v12.19, --features medium)" },
+  large: { maxAccounts: 4096, dataSize: 1495e3, label: "Large", description: "4096 slots (v12.19, default features)" }
+};
 function buildLayoutVSetDexPool(maxAccounts) {
   const engineOff = V_SETDEXPOOL_ENGINE_OFF;
   const bitmapOff = V_ADL_ENGINE_BITMAP_OFF;
@@ -4651,6 +4657,10 @@ async function discoverMarkets(connection, programId, options = {}) {
   const ALL_TIERS = [
     ...Object.values(SLAB_TIERS),
     // v12.17 (default)
+    ...Object.values(SLAB_TIERS_V12_19),
+    // v12.19 (deployed mainnet)
+    ...Object.values(SLAB_TIERS_V12_17),
+    // v12.17 (explicit)
     ...Object.values(SLAB_TIERS_V12_15),
     // v12.15
     ...Object.values(SLAB_TIERS_V12_1),
@@ -7043,6 +7053,7 @@ export {
   SLAB_TIERS_V12_1,
   SLAB_TIERS_V12_15,
   SLAB_TIERS_V12_17,
+  SLAB_TIERS_V12_19,
   SLAB_TIERS_V1D,
   SLAB_TIERS_V1D_LEGACY,
   SLAB_TIERS_V1M,

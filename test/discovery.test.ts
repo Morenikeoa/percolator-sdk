@@ -16,6 +16,8 @@ import {
   SLAB_TIERS_V_ADL,
   SLAB_TIERS_V12_1,
   SLAB_TIERS_V12_15,
+  SLAB_TIERS_V12_17,
+  SLAB_TIERS_V12_19,
   SLAB_TIERS_V_SETDEXPOOL,
 } from "../src/solana/slab.js";
 
@@ -438,6 +440,8 @@ describe("discoverMarkets — sequential mode (PERC-1650)", () => {
     // Each tier got exactly ONE call (no retry on non-429)
     const allTierCount =
       Object.keys(SLAB_TIERS).length +
+      Object.keys(SLAB_TIERS_V12_19).length +
+      Object.keys(SLAB_TIERS_V12_17).length +
       Object.keys(SLAB_TIERS_V12_15).length +
       Object.keys(SLAB_TIERS_V12_1).length +
       Object.keys(SLAB_TIERS_V0).length +

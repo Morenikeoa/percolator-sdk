@@ -159,6 +159,23 @@ export declare const SLAB_TIERS_V12_17: Record<string, {
     description: string;
 }>;
 /**
+ * V12_19 slab tier sizes (probe-confirmed via cargo build-sbf compile-time
+ * assertions on 2026-04-28). Used by `discoverMarkets` to filter program
+ * accounts by dataSize. Without this tier set, v12.19 slabs (the only kind
+ * the deployed mainnet program ESa89R5... produces post-2026-04-28 upgrade)
+ * fall through to the memcmp fallback path with no layout hint.
+ *
+ * Sizes derived from V12_19_SIZES Map (defined earlier in this file at the
+ * V12_19 layout block). Kept as Record for parity with other SLAB_TIERS_*
+ * exports consumed by discovery.ts.
+ */
+export declare const SLAB_TIERS_V12_19: Record<string, {
+    maxAccounts: number;
+    dataSize: number;
+    label: string;
+    description: string;
+}>;
+/**
  * Detect the slab layout version from the raw account data length.
  * Returns the full SlabLayout descriptor, or null if the size is unrecognised.
  * Checks V12_15, V12_1_EP, V12_1, V_SETDEXPOOL, V1M2, V_ADL, V1M, V0, V1D, V1D-legacy, V1, and V1-legacy sizes.

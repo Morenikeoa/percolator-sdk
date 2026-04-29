@@ -7,6 +7,51 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.5] — 2026-04-29
+
+`discoverMarkets` gap fix. The keeper+indexer alignment audit on 2026-04-29
+flagged that `discoverMarkets` in v2.0.4 was missing `SLAB_TIERS_V12_19` in
+its `ALL_TIERS` array, causing v12.19 mainnet slabs (96760-byte for `--features small`,
+the only kind the deployed program ESa89R5... produces post-2026-04-28
+upgrade) to fall through to the memcmp fallback path with no layout hint.
+
+Same class of bug as the earlier GH#1205 / GH#1237 / GH#1238 missed-tier
+issues with V1D / V1D_LEGACY. Fix is symmetric: add the tier set, add to
+ALL_TIERS, expose via export.
+
+### Added
+
+- `SLAB_TIERS_V12_19` exported from `src/solana/slab.ts`. Contains the four
+  v12.19 SBF tier sizes (probe-confirmed via `cargo build-sbf --features
+  small` compile assertions on 2026-04-28):
+  - `micro` 26848 bytes (64 accounts)
+  - `small` 96760 bytes (256 accounts) — deployed mainnet ESa89R5...
+  - `medium` 376408 bytes (1024 accounts)
+  - `large` 1495000 bytes (4096 accounts)
+- `discoverMarkets` ALL_TIERS now includes `SLAB_TIERS_V12_19` (and
+  `SLAB_TIERS_V12_17` explicitly, matching the same pattern). `dataSize`
+  filter queries now find v12.19 slabs without falling through to memcmp.
+
+### Workaround that no longer needed
+
+The keeper and indexer services were working around this in v2.0.4 by
+running per-cycle `fetchSlab` + `auto-detect parse` instead of relying on
+`discoverMarkets`. With v2.0.5, `discoverMarkets` returns v12.19 slabs
+correctly with the right layout hint up front. Services can simplify
+their discovery code if they want, but the workaround keeps working.
+
+### Gates
+
+- pnpm test 792 PASS / 31 SKIPPED.
+- pnpm lint clean.
+- pnpm build clean.
+
+### Deprecation
+
+v2.0.4 deprecated. Earlier 2.0.0/2.0.1/2.0.2/2.0.3 already deprecated.
+
+---
+
 ## [2.0.4] — 2026-04-28
 
 Independent verifier audit caught a real BYTE_DRIFT_BLOCKING bug missed

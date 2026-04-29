@@ -11,6 +11,7 @@ import {
   SLAB_TIERS_V12_1,
   SLAB_TIERS_V12_15,
   SLAB_TIERS_V12_17,
+  SLAB_TIERS_V12_19,
   SLAB_TIERS_V_SETDEXPOOL,
   type SlabHeader,
   type MarketConfig,
@@ -612,8 +613,14 @@ export async function discoverMarkets(
   // GH#1237/GH#1238: SLAB_TIERS_V1D_LEGACY (postBitmap=18, e.g. 65,104-byte slabs created before
   // GH#1234) must also be included; omitting them causes legacy on-chain slabs to be missed by
   // dataSize filter queries and fall through to memcmp with wrong maxAccounts hint.
+  // 2026-04-29: SLAB_TIERS_V12_19 added — same class of bug. v12.19 mainnet slabs (deployed
+  // 2026-04-28 to ESa89R5...) produce 96760-byte (small) accounts that none of the older tiers
+  // match. Without this entry, discoverMarkets on the upgraded program returns 0 markets via the
+  // dataSize-filter path and falls through to memcmp with wrong layout hints.
   const ALL_TIERS = [
     ...Object.values(SLAB_TIERS),           // v12.17 (default)
+    ...Object.values(SLAB_TIERS_V12_19),    // v12.19 (deployed mainnet)
+    ...Object.values(SLAB_TIERS_V12_17),    // v12.17 (explicit)
     ...Object.values(SLAB_TIERS_V12_15),    // v12.15
     ...Object.values(SLAB_TIERS_V12_1),     // v12.1
     ...Object.values(SLAB_TIERS_V0),
