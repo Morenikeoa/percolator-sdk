@@ -2316,7 +2316,7 @@ var V12_19_HEADER_LEN_SBF = 136;
 var V12_19_CONFIG_LEN = 480;
 var V12_19_ENGINE_OFF_SBF = 616;
 var V12_19_ACCOUNT_SIZE_SBF = 360;
-var V12_19_SBF_ENGINE_BITMAP_OFF = 712;
+var V12_19_SBF_ENGINE_BITMAP_OFF = 736;
 var V12_19_SBF_ENGINE_CURRENT_SLOT_OFF = 200;
 var V12_19_SBF_ENGINE_MARKET_MODE_OFF = 208;
 var V12_19_SBF_ENGINE_RESOLVED_LIVE_PRICE_OFF = 304;
@@ -4001,7 +4001,7 @@ function parseAccount(data, idx) {
   const isV12_1 = !isV12_17 && !isV12_15 && !isV12_1EP && (layout.engineOff === V12_1_ENGINE_OFF || layout.engineOff === V12_1_SBF_ENGINE_OFF) && (layout.accountSize === V12_1_ACCOUNT_SIZE || layout.accountSize === V12_1_ACCOUNT_SIZE_SBF);
   const isAdl = !isV12_17 && !isV12_15 && (layout.accountSize >= 312 || isV12_1 || isV12_1EP);
   if (isV12_17) {
-    const isSbf = layout.accountSize === V12_17_ACCOUNT_SIZE_SBF;
+    const isSbf = layout.accountSize === V12_17_ACCOUNT_SIZE_SBF || layout.accountSize === V12_19_ACCOUNT_SIZE_SBF;
     const d1 = isSbf ? 8 : 0;
     const d2 = isSbf ? 16 : 0;
     const kindByte2 = readU8(data, base + V12_17_ACCT_KIND_OFF);

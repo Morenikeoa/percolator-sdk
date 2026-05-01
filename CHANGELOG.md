@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.8] — 2026-05-01
+
+Live v12.19 slab parser fix for the first `af43efc` mainnet market.
+
+### Fixed
+
+- Corrected v12.19 SBF RiskEngine bitmap/free-list/account offsets for the
+  live small-tier slab layout:
+  - bitmap offset: `engine + 736`
+  - `num_used_accounts`: `engine + 768`
+  - accounts array: `engine + 1800` (`slab + 2416`)
+- Routed v12.19 360-byte accounts through the SBF account-field alignment path.
+  Without this, `parseAccount` decoded LP capital/kind correctly but returned
+  wrong `matcherProgram`, `matcherContext`, and `owner` public keys.
+
+### Verified
+
+- Live mainnet slab `6ka35x...xe8o` parses with one LP account, capital
+  `49.999999` USDC, matcher context `DKkw...bSTw`, and owner
+  `7JVQ...V5G`.
+- SDK build and full test suite pass.
+
+---
+
 ## [2.0.7] — 2026-05-01
 
 `SLAB_TIERS_V12_19` layout bump for the mainnet `af43efc` wrapper redeploy.

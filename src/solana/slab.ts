@@ -915,14 +915,15 @@ const V12_19_ACCOUNT_SIZE_SBF    = 360;
 const V12_19_SBF_RISK_BUF_LEN    = 160;
 const V12_19_SBF_GEN_TABLE_ENTRY = 8;
 
-// Within RiskEngine, relative to engine start (probe-confirmed for small tier).
-// Some bitmap-region offsets depend on MAX_ACCOUNTS; small (256) shown here.
-const V12_19_SBF_ENGINE_BITMAP_OFF        = 712;  // [u64; ceil(MAX/64)] starts here
-const V12_19_SBF_ENGINE_NUM_USED_OFF_S    = 744;  // small: bitmap is 32 bytes
-const V12_19_SBF_ENGINE_FREE_HEAD_OFF_S   = 746;
-const V12_19_SBF_ENGINE_NEXT_FREE_OFF_S   = 748;  // [u16; 256] for small
-const V12_19_SBF_ENGINE_PREV_FREE_OFF_S   = 1260; // small: after next_free 512 bytes
-const V12_19_SBF_ENGINE_ACCOUNTS_OFF_S    = 1776; // small: after prev_free + 4-byte align
+// Within RiskEngine, relative to engine start (probe-confirmed on the live
+// af43efc mainnet small-tier slab). Some bitmap-region offsets depend on
+// MAX_ACCOUNTS; small (256) shown here.
+const V12_19_SBF_ENGINE_BITMAP_OFF        = 736;  // [u64; ceil(MAX/64)] starts here
+const V12_19_SBF_ENGINE_NUM_USED_OFF_S    = 768;  // small: bitmap is 32 bytes
+const V12_19_SBF_ENGINE_FREE_HEAD_OFF_S   = 770;
+const V12_19_SBF_ENGINE_NEXT_FREE_OFF_S   = 772;  // [u16; 256] for small
+const V12_19_SBF_ENGINE_PREV_FREE_OFF_S   = 1284; // small: after next_free 512 bytes
+const V12_19_SBF_ENGINE_ACCOUNTS_OFF_S    = 1800; // small: after prev_free + 4-byte align
 
 // V12_19 SBF RiskEngine field offsets (rel to engine start, probe-confirmed):
 const V12_19_SBF_ENGINE_PARAMS_OFF              = 32;
@@ -976,11 +977,11 @@ const V12_19_SIZES = new Map<number, number>([
  *
  * Major structural difference vs V12_17 SBF: accounts array is INLINE within
  * RiskEngine (was separate region in V12_17). Bitmap moved from rel-engine
- * 712 area to same offset but the post-bitmap region now contains both
+ * 736 area to same offset but the post-bitmap region now contains both
  * `next_free` and `prev_free` arrays (v12.19 added prev_free), plus padding
  * before the inline accounts.
  *
- * For the small tier (MAX_ACCOUNTS=256), accounts start at engineOff + 1776.
+ * For the small tier (MAX_ACCOUNTS=256), accounts start at engineOff + 1800.
  * For other tiers, the offset shifts because next_free/prev_free sizes scale
  * linearly with MAX_ACCOUNTS.
  */
@@ -3445,7 +3446,8 @@ export function parseAccount(data: Uint8Array, idx: number): Account {
     //   The first gap (after sched_present) does NOT add extra delta because sched_present lands at
     //   native offset 248 where (249 % 16 = 9) needs only 7 bytes — same as SBF. But pending_present
     //   lands at native 320 where (321 % 16 = 1) needs 15 bytes vs SBF's 7.
-    const isSbf = layout.accountSize === V12_17_ACCOUNT_SIZE_SBF;
+    const isSbf = layout.accountSize === V12_17_ACCOUNT_SIZE_SBF
+               || layout.accountSize === V12_19_ACCOUNT_SIZE_SBF;
     const d1 = isSbf ? 8 : 0;  // fields after kind through pending_present
     const d2 = isSbf ? 16 : 0; // fields after pending_present (pending_remaining_q onward)
 

@@ -674,6 +674,10 @@ console.log("\n✅ All slab tests passed!");
   assert(layoutSbf!.configLen === 480, `V12_19 configLen should be 480, got ${layoutSbf!.configLen}`);
   assert(layoutSbf!.accountSize === 360, `V12_19 SBF accountSize should be 360, got ${layoutSbf!.accountSize}`);
   assert(layoutSbf!.headerLen === 136, `V12_19 SBF headerLen should be 136, got ${layoutSbf!.headerLen}`);
+  assert(layoutSbf!.engineBitmapOff === 736,
+    `V12_19 SBF bitmapOff should be 736, got ${layoutSbf!.engineBitmapOff}`);
+  assert(layoutSbf!.accountsOff === 2416,
+    `V12_19 SBF accountsOff should be 2416, got ${layoutSbf!.accountsOff}`);
 
   // V12_19 RiskEngine internal offsets (probe-confirmed):
   // last_market_slot at +640 (replaces V12_17 last_crank_slot)
@@ -736,6 +740,19 @@ console.log("\n✅ All slab tests passed!");
   buf.writeBigUInt64LE(750_000n, engineBase + 488);   // oi_eff_short_q lower 8
   buf.writeBigUInt64LE(500n, engineBase + 200);       // current_slot
   buf.writeUInt8(1, engineBase + 208);                // market_mode
+  buf.writeBigUInt64LE(1n, engineBase + 736);          // used bitmap word 0, idx 0
+  buf.writeUInt16LE(1, engineBase + 768);              // num_used_accounts
+  buf.writeUInt16LE(1, engineBase + 770);              // free_head
+
+  const account0 = engineBase + 1800;
+  const matcherProgram = new PublicKey(Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1)));
+  const matcherContext = new PublicKey(Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 33)));
+  const owner = new PublicKey(Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 65)));
+  buf.writeBigUInt64LE(49_999_999n, account0 + 0);     // Account.capital low u64
+  buf.writeUInt8(AccountKind.LP, account0 + 16);       // Account.kind
+  matcherProgram.toBuffer().copy(buf, account0 + 128); // Account.matcher_program (SBF)
+  matcherContext.toBuffer().copy(buf, account0 + 160); // Account.matcher_context (SBF)
+  owner.toBuffer().copy(buf, account0 + 192);          // Account.owner (SBF)
 
   const eng = parseEngine(buf);
   assert(eng.lastCrankSlot === 123_456n, `parseEngine.lastCrankSlot expected 123456, got ${eng.lastCrankSlot}`);
@@ -744,6 +761,14 @@ console.log("\n✅ All slab tests passed!");
   assert(eng.shortOi === 750_000n, `parseEngine.shortOi expected 750000, got ${eng.shortOi}`);
   assert(eng.totalOpenInterest === 1_750_000n,
     `parseEngine.totalOpenInterest expected 1750000 (long+short), got ${eng.totalOpenInterest}`);
+  assert(eng.numUsedAccounts === 1, `parseEngine.numUsedAccounts expected 1, got ${eng.numUsedAccounts}`);
+  assert(parseUsedIndices(buf).join(",") === "0", `parseUsedIndices expected [0], got [${parseUsedIndices(buf).join(",")}]`);
+  const acct0 = parseAccount(buf, 0);
+  assert(acct0.kind === AccountKind.LP, `parseAccount(0).kind expected LP, got ${acct0.kind}`);
+  assert(acct0.capital === 49_999_999n, `parseAccount(0).capital expected 49999999, got ${acct0.capital}`);
+  assert(acct0.matcherProgram.equals(matcherProgram), `parseAccount(0).matcherProgram offset mismatch`);
+  assert(acct0.matcherContext.equals(matcherContext), `parseAccount(0).matcherContext offset mismatch`);
+  assert(acct0.owner.equals(owner), `parseAccount(0).owner offset mismatch`);
   console.log("  ✓ parseEngine round-trips all four V12_17 engine fields");
 
   console.log("✅ V12_17 engine offset tests passed!");
