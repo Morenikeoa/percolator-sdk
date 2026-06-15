@@ -3862,7 +3862,7 @@ export function parseWrapperConfigV17(data: Uint8Array, configOff: number = V17_
   const markEwmaHalflifeSlots = readU64LE(data, b + 248);
   const markMinFee = readU64LE(data, b + 256);
   const oracleTargetPriceE6 = readU64LE(data, b + 264);
-  const oracleTargetPublishTime = readU64LE(data, b + 272);
+  const oracleTargetPublishTime = readI64LE(data, b + 272); // i64 in WrapperConfigV16 (matches parseAssetOracleProfileV17)
 
   // oracle_leg_feeds: [[u8;32];3] at b+280, 96 bytes total
   const ORACLE_LEG_CAP = 3;

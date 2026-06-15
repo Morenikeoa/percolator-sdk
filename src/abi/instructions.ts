@@ -1531,7 +1531,14 @@ export function computeEmaMarkPrice(
  *   3..N []       Remaining accounts (e.g. PumpSwap vault0 + vault1)
  */
 export function encodeUpdateHyperpMark(): Uint8Array {
-  return new Uint8Array([34]);
+  // v17: tag 34 is ConfigureHybridOracle (a large payload), NOT a 1-byte DEX-pool mark crank.
+  // Emitting [34] would be decoded as ConfigureHybridOracle with an empty body → InvalidInstructionData.
+  // The v12 hyperp DEX-pool mark mode was removed; fail loud instead of building a rejected tx.
+  return removedInstruction(
+    "UpdateHyperpMark (v12 DEX-pool mark crank — tag 34 is ConfigureHybridOracle in v17)",
+    34,
+    "ConfigureHybridOracle (tag 34) / ConfigureEwmaMark (tag 35), or PermissionlessCrank (tag 5) for mark refresh",
+  );
 }
 
 // ============================================================================
