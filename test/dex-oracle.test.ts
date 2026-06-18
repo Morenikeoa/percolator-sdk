@@ -110,12 +110,12 @@ assertThrows(
   "pumpswap parse too short"
 );
 
-// Price computation — normal
+// Price computation — normal (equal decimals)
 {
   const poolData = makePumpSwapPoolData();
   const base = makeSplTokenAccount(1_000_000_000n); // 1B base
   const quote = makeSplTokenAccount(500_000_000n);   // 500M quote
-  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote });
+  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote }, { base: 6, quote: 6 });
   // price = 500M * 1e6 / 1B = 500_000
   assert(price === 500_000n, `pumpswap normal price: expected 500000, got ${price}`);
 }
@@ -125,7 +125,7 @@ assertThrows(
   const poolData = makePumpSwapPoolData();
   const base = makeSplTokenAccount(0n);
   const quote = makeSplTokenAccount(100n);
-  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote });
+  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote }, { base: 6, quote: 6 });
   assert(price === 0n, "pumpswap zero base returns 0");
 }
 
@@ -134,7 +134,7 @@ assertThrows(
   const poolData = makePumpSwapPoolData();
   const base = makeSplTokenAccount(18_446_744_073_709_551_615n); // u64 max
   const quote = makeSplTokenAccount(18_446_744_073_709_551_615n);
-  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote });
+  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote }, { base: 6, quote: 6 });
   assert(price === 1_000_000n, `pumpswap equal large amounts: expected 1000000, got ${price}`);
 }
 
@@ -143,7 +143,7 @@ assertThrows(
   () => computeDexSpotPriceE6("pumpswap", makePumpSwapPoolData(), {
     base: new Uint8Array(10),
     quote: makeSplTokenAccount(100n),
-  }),
+  }, { base: 6, quote: 6 }),
   "too short",
   "pumpswap base vault too short"
 );
@@ -153,6 +153,41 @@ assertThrows(
   () => computeDexSpotPriceE6("pumpswap", makePumpSwapPoolData()),
   "vaultData",
   "pumpswap missing vaultData"
+);
+
+// Missing decimals — fail closed, matching the Meteora (#226) precedent.
+assertThrows(
+  () => computeDexSpotPriceE6("pumpswap", makePumpSwapPoolData(), {
+    base: makeSplTokenAccount(1_000_000_000n),
+    quote: makeSplTokenAccount(500_000_000n),
+  }),
+  "requires decimals",
+  "pumpswap requires decimals"
+);
+
+// Asymmetric decimals — the actual bug: a 6-decimal base token vs. a 9-decimal quote
+// (e.g. wSOL) must scale by 10^(decBase-decQuote), not be read as raw atomic ratio.
+{
+  const poolData = makePumpSwapPoolData();
+  // 1000 base tokens (6 decimals) vs 1 quote token (9 decimals) → true price 0.001 → 1000 in e6.
+  const base = makeSplTokenAccount(1_000_000_000n);  // 1000 * 10^6
+  const quote = makeSplTokenAccount(1_000_000_000n); // 1 * 10^9
+  const price = computeDexSpotPriceE6("pumpswap", poolData, { base, quote }, { base: 6, quote: 9 });
+  assert(price === 1_000n, `pumpswap decimals -3: expected 1000, got ${price}`);
+
+  // Same raw amounts, decimals swapped → true price 1000 → 1_000_000_000 in e6.
+  const price2 = computeDexSpotPriceE6("pumpswap", poolData, { base, quote }, { base: 9, quote: 6 });
+  assert(price2 === 1_000_000_000n, `pumpswap decimals +3: expected 1000000000, got ${price2}`);
+}
+
+// Decimals out of range rejected.
+assertThrows(
+  () => computeDexSpotPriceE6("pumpswap", makePumpSwapPoolData(), {
+    base: makeSplTokenAccount(1_000_000_000n),
+    quote: makeSplTokenAccount(500_000_000n),
+  }, { base: 99, quote: 6 }),
+  "out of range",
+  "pumpswap decimals out of range"
 );
 
 console.log("  ✓ PumpSwap");

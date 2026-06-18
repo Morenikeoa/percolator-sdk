@@ -80,7 +80,15 @@ export function computeDexSpotPriceE6(
   switch (dexType) {
     case "pumpswap":
       if (!vaultData) throw new Error("PumpSwap requires vaultData (base and quote vault accounts)");
-      return computePumpSwapPriceE6(data, vaultData);
+      // PumpSwap vault accounts are raw SPL Token Accounts, which do not store mint
+      // decimals inline (decimals live on the Mint account). Same root cause as #226
+      // (Meteora): without the caller-supplied decimal adjustment the price is wrong
+      // by 10^(decBase-decQuote) whenever base/quote decimals differ — e.g. 1000x for
+      // a typical 6-decimal token vs. 9-decimal wSOL quote.
+      if (!decimals) {
+        throw new Error("PumpSwap requires decimals { base, quote } (mint decimals)");
+      }
+      return computePumpSwapPriceE6(data, vaultData, decimals);
     case "raydium-clmm":
       return computeRaydiumClmmPriceE6(data);
     case "meteora-dlmm":
@@ -121,18 +129,30 @@ function parsePumpSwapPool(poolAddress: PublicKey, data: Uint8Array): DexPoolInf
 const SPL_TOKEN_AMOUNT_MIN_LEN = 72;
 
 /**
- * Compute PumpSwap price: quote_amount * 1e6 / base_amount.
+ * Compute PumpSwap price: (quote_amount / 10^decQuote) / (base_amount / 10^decBase) * 1e6,
+ * i.e. raw vault amounts adjusted for mint decimals before computing the ratio.
+ *
+ * Vault accounts hold atomic (native) token amounts; decimals live on the Mint account
+ * and are not present in the vault data, so the caller must supply them — same
+ * requirement and root cause as the Meteora DLMM fix (#226).
+ *
  * @internal
  */
 function computePumpSwapPriceE6(
   _poolData: Uint8Array,
   vaultData: { base: Uint8Array; quote: Uint8Array },
+  decimals: { base: number; quote: number },
 ): bigint {
   if (vaultData.base.length < SPL_TOKEN_AMOUNT_MIN_LEN) {
     throw new Error(`PumpSwap base vault data too short: ${vaultData.base.length} < ${SPL_TOKEN_AMOUNT_MIN_LEN}`);
   }
   if (vaultData.quote.length < SPL_TOKEN_AMOUNT_MIN_LEN) {
     throw new Error(`PumpSwap quote vault data too short: ${vaultData.quote.length} < ${SPL_TOKEN_AMOUNT_MIN_LEN}`);
+  }
+  if (decimals.base > MAX_TOKEN_DECIMALS || decimals.quote > MAX_TOKEN_DECIMALS) {
+    throw new Error(
+      `PumpSwap: decimals out of range (${decimals.base}, ${decimals.quote}); max ${MAX_TOKEN_DECIMALS}`,
+    );
   }
 
   const baseDv = new DataView(vaultData.base.buffer, vaultData.base.byteOffset, vaultData.base.byteLength);
@@ -142,7 +162,16 @@ function computePumpSwapPriceE6(
   const quoteAmount = readU64LE(quoteDv, 64);
 
   if (baseAmount === 0n) return 0n;
-  return (quoteAmount * 1_000_000n) / baseAmount;
+
+  // price_e6 = quoteAmount * 1e6 * 10^decBase / (baseAmount * 10^decQuote).
+  // Fold the decimal scale into numerator or denominator (never a negative BigInt
+  // exponent) and truncate exactly once, deferring the division to the end.
+  const decimalDiff = decimals.base - decimals.quote;
+  if (decimalDiff >= 0) {
+    return (quoteAmount * 1_000_000n * 10n ** BigInt(decimalDiff)) / baseAmount;
+  } else {
+    return (quoteAmount * 1_000_000n) / (baseAmount * 10n ** BigInt(-decimalDiff));
+  }
 }
 
 // ============================================================================
