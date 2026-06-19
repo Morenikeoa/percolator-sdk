@@ -469,14 +469,33 @@ export const ACCOUNTS_DEPOSIT_FEE_CREDITS: readonly AccountSpec[] = [
 ] as const;
 
 /**
- * ConvertReleasedPnl (tag 28): 4 accounts. Owner only.
- * Wrapper: src/percolator.rs:10636.
+ * ConvertReleasedPnl (tag 28): 3 accounts (inferred — see confidence note below).
+ * Owner only. No token movement (internal PnL-bucket conversion within the
+ * same portfolio).
+ *
+ * The v12.19 4-account layout this constant previously documented
+ * ([user(s+w), slab(w), clock, oracle], src/percolator.rs:10636) is stale.
+ * Its paired encoder, `encodeConvertReleasedPnl`, was confirmed rewritten for
+ * v17 (instructions.ts): "BREAKING vs v12.x: userIdx(u16) removed... v17
+ * portfolios are identified by account key alone" — and that same comment
+ * points back to this exact constant ("Accounts: see
+ * ACCOUNTS_CONVERT_RELEASED_PNL"), but this spec was never updated to add the
+ * account-key-identified portfolio the encoder's own doc describes.
+ *
+ * INFERENCE, not a confirmed v17 wrapper read (no percolator-prog source is
+ * available in this repo to verify directly). Basis: ConvertReleasedPnl is
+ * owner-initiated and moves no real tokens, the exact same category as
+ * ACCOUNTS_INIT_USER (InitPortfolio) and ACCOUNTS_CLOSE_ACCOUNT
+ * (ClosePortfolio) — both confirmed v17-rewritten to the identical 3-account
+ * shape [owner(signer,w), market(w), portfolio(w)], with v12 clock/oracle/userIdx
+ * dropped for the same "account-key, not index" reason this encoder's doc cites.
+ * Before relying on this in production, verify against an actual v17
+ * `handle_convert_released_pnl` decode (devnet dry-run or program source).
  */
 export const ACCOUNTS_CONVERT_RELEASED_PNL: readonly AccountSpec[] = [
-  { name: "user", signer: true, writable: true },
-  { name: "slab", signer: false, writable: true },
-  { name: "clock", signer: false, writable: false },
-  { name: "oracle", signer: false, writable: false },
+  { name: "owner", signer: true, writable: true },
+  { name: "market", signer: false, writable: true },
+  { name: "portfolio", signer: false, writable: true },
 ] as const;
 
 /**
