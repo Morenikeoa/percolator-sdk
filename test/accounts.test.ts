@@ -264,6 +264,19 @@ describe("Signer / writable invariants", () => {
     }
   });
 
+  it("ACCOUNTS_RESOLVE_MARKET matches its v17-rewritten encoder, not the stale v12.19 layout", () => {
+    // encodeResolveMarket was confirmed rewritten for v17 (tag-only, no mode byte).
+    // Every other v17-rewritten spec in this file drops standalone clock/oracle
+    // accounts with no exception — this spec must not still carry them.
+    expect(ACCOUNTS_RESOLVE_MARKET).toHaveLength(2);
+    expect(ACCOUNTS_RESOLVE_MARKET.find((a) => a.name === "clock")).toBeUndefined();
+    expect(ACCOUNTS_RESOLVE_MARKET.find((a) => a.name === "oracle")).toBeUndefined();
+    expect(ACCOUNTS_RESOLVE_MARKET[0]).toMatchObject({ name: "admin", signer: true, writable: true });
+    const marketSlab = ACCOUNTS_RESOLVE_MARKET.find((a) => a.name === "slab" || a.name === "market");
+    expect(marketSlab, "market/slab account missing").toBeDefined();
+    expect(marketSlab!.writable).toBe(true);
+  });
+
 });
 
 // ============================================================================
