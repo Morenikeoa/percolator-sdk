@@ -293,6 +293,39 @@ const { ranked, longs, shorts, isTriggered } = await fetchAdlRankedPositions(
 // isTriggered — whether pnl_pos_tot exceeds max_pnl_cap on-chain
 ```
 
+#### Building an ADL instruction
+
+> **Currently throws:** `ExecuteAdl` (the v12 tag this function encodes) was removed from
+> the v17 wrapper program, so `buildAdlInstruction`/`buildAdlTransaction` always throw
+> `removedInstruction()` today — there is no working v17 replacement yet. The ranking
+> functions above (`isAdlTriggered`, `fetchAdlRankedPositions`) remain accurate and useful
+> on their own; only the instruction-building step below is currently non-functional.
+
+```typescript
+import { buildAdlInstruction, buildAdlTransaction, getProgramId } from "@percolator/sdk";
+
+const programId = getProgramId("devnet");
+
+// Build instruction directly (caller already has target index)
+const ix = buildAdlInstruction(
+  callerPublicKey,   // keeper / crank wallet
+  slabPublicKey,
+  oracleFeedPublicKey,
+  programId,
+  targetAccountIndex, // number — index of account to deleverage
+);
+
+// OR: fetch + rank + pick top target automatically
+const ix2 = await buildAdlTransaction(
+  connection,
+  callerPublicKey,
+  slabPublicKey,
+  oracleFeedPublicKey,
+  programId,
+  "long", // side to deleverage ("long" | "short")
+);
+```
+
 #### Decoding on-chain ADL events
 
 ```typescript

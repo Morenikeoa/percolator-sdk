@@ -266,9 +266,17 @@ export function rankAdlPositions(slabData: Uint8Array): AdlRankingResult {
 }
 
 /**
+ * Build a single `ExecuteAdl` TransactionInstruction (PERC-305).
+ *
  * Unsupported in v17: `ExecuteAdl` transaction building is not available in
  * the v17 wrapper path. The ranking, trigger-check, HTTP API, and event parser
  * utilities remain available.
+ *
+ * **Always throws.** This calls `encodeExecuteAdl()`, which always throws —
+ * `IX_TAG.ExecuteAdl` is pinned to the old v12 tag 101, which the v17 wrapper
+ * does not accept, and there is no working v17 replacement encoder yet (see
+ * the doc comment on `encodeExecuteAdl`/`ExecuteAdlArgs` in
+ * `src/abi/instructions.ts`). Kept exported for when a v17 encoder lands.
  *
  * This function is kept as a deprecated compatibility stub so consumers get a
  * deterministic error instead of a lower-level removed-instruction throw.
@@ -280,6 +288,7 @@ export function rankAdlPositions(slabData: Uint8Array): AdlRankingResult {
  * @param targetIdx  - Account index to deleverage (from `AdlRankedPosition.idx`).
  * @param backupOracles - Optional additional oracle accounts (non-Hyperp markets).
  * @deprecated ExecuteAdl transaction building is not supported in the v17 SDK.
+ * @throws always — see above.
  */
 export function buildAdlInstruction(
   _caller: PublicKey,
@@ -301,6 +310,11 @@ export function buildAdlInstruction(
  * Convenience builder: fetch slab, rank positions, pick the highest-ranked
  * target on the given side, and return a ready-to-send `TransactionInstruction`.
  *
+ * **Always throws.** This calls `buildAdlInstruction`, which always throws —
+ * see its doc comment above. Kept exported for when a v17 `ExecuteAdl`
+ * encoder lands; `fetchAdlRankedPositions` (used internally here) remains
+ * accurate and useful on its own.
+ *
  * Returns `null` when ADL is not triggered or no eligible positions exist.
  *
  * @param connection    - Solana connection.
@@ -311,16 +325,7 @@ export function buildAdlInstruction(
  * @param preferSide    - Optional: target "long" or "short" side only.
  *                        If omitted, picks the overall top-ranked position.
  * @param backupOracles - Optional extra oracle accounts.
- *
- * @example
- * ```ts
- * const ix = await buildAdlTransaction(
- *   connection, caller.publicKey, slabKey, oracleKey, PROGRAM_ID
- * );
- * if (ix) {
- *   await sendAndConfirmTransaction(connection, new Transaction().add(ix), [caller]);
- * }
- * ```
+ * @throws always — see above.
  */
 export async function buildAdlTransaction(
   connection: Connection,
