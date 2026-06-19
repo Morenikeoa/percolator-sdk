@@ -42,6 +42,16 @@ describe("encU64", () => {
   it("encodes string '1000000'", () => expect(encU64("1000000")).toEqual(new Uint8Array([64, 66, 15, 0, 0, 0, 0, 0])));
   it("encodes u64 max", () => expect(encU64(0xffff_ffff_ffff_ffffn)).toEqual(new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255])));
   it("throws on negative", () => expect(() => encU64(-1n)).toThrow());
+  it("rejects non-decimal string formats native BigInt() would silently accept", () => {
+    // BigInt("0x64") === 100n, BigInt("0o144") === 100n, BigInt("0b1100100") === 100n,
+    // BigInt("007") === 7n — all silently accepted by the bare BigInt() cast this
+    // replaced. A caller passing one of these (e.g. a copy-pasted hex amount) would
+    // get a different numeric value encoded with no indication anything was off.
+    expect(() => encU64("0x64")).toThrow(/not a valid decimal integer/);
+    expect(() => encU64("0o144")).toThrow(/not a valid decimal integer/);
+    expect(() => encU64("0b1100100")).toThrow(/not a valid decimal integer/);
+    expect(() => encU64("007")).toThrow(/not a valid decimal integer/);
+  });
 });
 
 describe("encI64", () => {
@@ -49,6 +59,9 @@ describe("encI64", () => {
   it("encodes -1n", () => expect(encI64(-1n)).toEqual(new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255])));
   it("encodes -2n", () => expect(encI64(-2n)).toEqual(new Uint8Array([254, 255, 255, 255, 255, 255, 255, 255])));
   it("encodes string '-100'", () => expect(encI64("-100")).toEqual(new Uint8Array([156, 255, 255, 255, 255, 255, 255, 255])));
+  it("rejects non-decimal string formats", () => {
+    expect(() => encI64("0x64")).toThrow(/not a valid decimal integer/);
+  });
 });
 
 describe("encU128", () => {
@@ -64,6 +77,9 @@ describe("encU128", () => {
     expect(encU128(1n << 64n)).toEqual(expected);
   });
   it("throws on negative", () => expect(() => encU128(-1n)).toThrow());
+  it("rejects non-decimal string formats", () => {
+    expect(() => encU128("0x64")).toThrow(/not a valid decimal integer/);
+  });
 });
 
 describe("encI128", () => {
@@ -76,6 +92,9 @@ describe("encI128", () => {
   });
   it("encodes -1000000n", () => {
     expect(encI128(-1000000n)).toEqual(new Uint8Array([192, 189, 240, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]));
+  });
+  it("rejects non-decimal string formats", () => {
+    expect(() => encI128("0x64")).toThrow(/not a valid decimal integer/);
   });
 
   const I128_MIN = -(1n << 127n);
