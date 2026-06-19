@@ -374,10 +374,16 @@ describe("SDK drift guards", () => {
 
   it("parses positionOwner from standalone NFT account bytes", () => {
     const buf = new Uint8Array(POSITION_NFT_STATE_LEN);
+    new DataView(buf.buffer).setBigUint64(0, 1n, true); // non-zero magic — see nft.ts magic check
     const owner = PublicKey.unique();
     buf.set(owner.toBytes(), 160);
     const parsed = parsePositionNftAccount(buf);
     expect(parsed.positionOwner.equals(owner)).toBe(true);
+  });
+
+  it("rejects a PositionNft buffer with a zero magic discriminator", () => {
+    const buf = new Uint8Array(POSITION_NFT_STATE_LEN);
+    expect(() => parsePositionNftAccount(buf)).toThrow(/zero magic/);
   });
 });
 

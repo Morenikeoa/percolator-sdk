@@ -259,7 +259,17 @@ function readI128FromView(view: DataView, offset: number): bigint {
 
 /**
  * Parse a PositionNft account from raw bytes.
- * @throws if data is shorter than POSITION_NFT_STATE_LEN (208 bytes).
+ *
+ * @throws if data is shorter than POSITION_NFT_STATE_LEN (208 bytes), or if
+ *   the magic discriminator at [0..8] is all-zero (an uninitialized/garbage
+ *   buffer, not a real on-chain PositionNft account — every sibling account
+ *   type in this SDK, e.g. slab/matcher/v17-market-group, writes a non-zero
+ *   magic on init). This is a partial check, not full discriminator
+ *   validation: the actual expected magic *value* for this account type is
+ *   not available anywhere in this repo's specs (specs/nft-parity.json only
+ *   records the magic *offset*, unlike e.g. matcher-parity.json's
+ *   MATCHER_MAGIC_hex) — verify against the percolator-nft program source if
+ *   exact-value validation is needed.
  */
 export function parsePositionNftAccount(data: Uint8Array): PositionNftState {
   if (data.length < POSITION_NFT_STATE_LEN) {
@@ -269,6 +279,13 @@ export function parsePositionNftAccount(data: Uint8Array): PositionNftState {
   }
 
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+
+  const magic = view.getBigUint64(0, true);
+  if (magic === 0n) {
+    throw new Error(
+      "PositionNft account has a zero magic discriminator — not a valid initialized account",
+    );
+  }
 
   return {
     version: data[8],
