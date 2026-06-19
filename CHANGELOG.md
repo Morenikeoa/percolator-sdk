@@ -7,6 +7,119 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [3.0.0] — 2026-06-09 to 2026-06-18
+
+**BREAKING.** Full ABI re-sync to the v17 on-chain program (`percolator-prog`
+tag `v17-phase3-wrapper` + `v17-phase2-engine`), replacing the v12.x wire
+format this SDK previously targeted. This entry consolidates everything
+shipped under the `3.0.0` version string across six commits between
+2026-06-09 and 2026-06-18 — none of the later commits bumped the version
+further (see the "Note on versioning" below).
+
+### Breaking changes
+
+- Wire format: most encoders changed shape. Several amount fields promoted
+  u64→u128 with stale `userIdx` arguments dropped (`Deposit`, `Withdraw`,
+  `TopUpInsurance`, `ConvertReleasedPnl`, `WithdrawInsurance`) — v17
+  identifies portfolios by account key, not index. `InitPortfolio`,
+  `ClosePortfolio`, and `ResolveMarket` became tag-only payloads (no mode/
+  kind byte). `InitMarket` moved to a 219-byte v17 wire format with
+  `admin`/`mint` relocated from instruction data to accounts.
+- `IX_TAG`: LP-vault tags renumbered 65-71 → 74-80 (collision resolution).
+  `WithdrawInsurance` moved 20 → 41; new tag 57 = `WithdrawInsuranceAsset`.
+  Tag 32 (`UpdateAuthority`) no longer takes a `kind` byte in v17.
+- `ExecuteAdl` (tag 101) was removed from the v17 wrapper —
+  `encodeExecuteAdl`/`buildAdlInstruction`/`buildAdlTransaction` now always
+  throw. There is no working v17 replacement encoder yet. (Documented
+  explicitly in README/JSDoc as of the `fix/adl-docs-throws-warning` fix.)
+- Several v12-only encoders now fail loud instead of emitting payloads the
+  v17 wrapper would silently reject: `encodeInitLP`, `encodeLiquidateAtOracle`,
+  `encodeUpdateAdmin`, `encodeUpdateHyperpMark` (tag 34 is now
+  `ConfigureHybridOracle` in v17 — sending the old 1-byte hyperp-mark payload
+  would have decoded as a malformed `ConfigureHybridOracle` call).
+- Error table truncated to codes 0-46 (toly 0-29, LP-vault 30-41, NFT 42-46).
+- `WrapperConfigV16` 624→432 bytes (`marketauth` replaces `insurance_authority`
+  at offset 0); `AssetOracleProfileV16` 368→400 bytes (`asset_admin` added).
+
+### Added
+
+- v17 oracle/matcher encoders the SDK previously lacked: `ConfigureHybridOracle`,
+  `ConfigureEwmaMark`, `PushEwmaMark`, `ConfigureAuthMark`, `PushAuthMark`,
+  `encodeMatcherInitPassive`, plus `deriveMatcherDelegate` and several other
+  LP-vault PDA helpers (`deriveLpVaultRegistry`/`Redemption`/`BackingLedger`/
+  `Escrow`).
+- `v17MarketAccountLen()` and `V17_PORTFOLIO_ACCOUNT_LEN` — v17 markets/portfolios
+  are dynamically sized; the old fixed `SLAB_TIERS` byte counts hard-fail
+  `InitMarket`/`InitPortfolio` against the v17 program.
+- `discoverMarkets`/`getMarketsByAddress` now recognize v17 market-group
+  accounts (magic `"PERCV16\0"`, corrected to the on-chain little-endian byte
+  order after an initial draft used the wrong endianness and matched zero
+  accounts).
+
+### Fixed (oracle pricing, CRITICAL)
+
+- **Meteora DLMM (#226):** `computeMeteoraDlmmPriceE6` never applied the
+  `10^(decBase-decQuote)` decimal scale — any market using a Meteora pool as
+  its oracle got a mark price wrong by an order of magnitude for
+  asymmetric-decimal pairs, causing mass-wrongful liquidations. Now requires
+  `decimals { base, quote }` and throws if omitted (fail loud, not silently
+  wrong).
+- **Raydium CLMM (#210):** `computeRaydiumClmmPriceE6` truncated twice
+  (`>>64` then `>>64`) before applying the decimal scale, collapsing
+  low-priced/large-decimal-asymmetry assets to `0n`. Now defers truncation to
+  a single shift at the end.
+- **DexScreener zero-price (#222):** a high-liquidity pair with an
+  unparseable/zero price could outrank a valid fallback and become
+  `bestSource` with `price: 0`. Now skipped.
+- **Cross-validation (#227):** `resolvePrice`'s Pyth-enrichment path now
+  requires DEX/Jupiter agreement within 50% before using either as the
+  enrichment reference, so one manipulable DEX source can't poison the price.
+
+### Fixed (client-side reliability)
+
+- **#248** `isRetryable` matched the broad "abort" substring, so a
+  deliberately-aborted request (timeout/cancel) was misclassified as
+  retryable and could loop indefinitely. Now checks error name explicitly.
+- **#249** `getProgramId`/`getMatcherProgramId`: an ambient `PROGRAM_ID` env
+  override took priority over an explicit `network` argument. Now an
+  explicit network is always authoritative.
+- **#252** `checkRpcHealth` created a new `Connection` (→ WebSocket client)
+  per call, leaking sockets under polling. Now probes via a raw JSON-RPC
+  `fetch` with no persistent resources.
+
+### Note on versioning
+
+The six commits in this window (`16c97a7`, `54e91cd`, `24c85b9`, `04cbd3e`,
+`0e42b2f`/`61fe1db`, `a922e4f`, `45222b7`, `5b140ae`) all shipped under the
+unbumped `3.0.0` string, including the Meteora fix above which the commit
+message itself flags `CRITICAL`. Consumers pinning `3.0.0` cannot distinguish
+pre- and post-fix installs from version metadata alone — flagged for the
+maintainers; future fixes of this kind should get their own patch version.
+
+---
+
+## [2.2.0-beta.1] — 2026-05-16
+
+`encodeResolveMarket` emitted only the tag byte, but the wrapper's decoder
+at the time required a `mode: u8` (0=Ordinary, 1=Degenerate, 2=Removed)
+immediately after it. Added an optional `mode` argument defaulting to
+Ordinary. (Superseded in `3.0.0`, where v17's `ResolveMarket` decoder reads
+no bytes after the tag at all — the `mode` byte was removed again,
+permanently this time, on the wrapper side.)
+
+---
+
+## [2.2.0-beta.0] — 2026-05-11
+
+Added v2 `InitMarket` extended-tail support: an optional
+`maxPriceMoveBpsPerSlot` override (u64), emitted as a 74-byte v2 tail when
+provided (vs the existing 66-byte v1 tail, which remains the default and
+falls back to the wrapper's `DEFAULT_MAX_PRICE_MOVE_BPS_PER_SLOT`). Throws
+if the override is explicitly set to zero, matching the wrapper's own
+`InvalidConfigParam` rejection.
+
+---
+
 ## [2.0.9] — 2026-05-02
 
 v12.19 `RiskParams` parser fix for user account creation and trading.
