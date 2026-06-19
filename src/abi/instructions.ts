@@ -880,7 +880,7 @@ export const CrankAction = {
  *
  * v17 wire: tag(1) + action(u8) + asset_index(u16) + now_slot(u64) +
  *   funding_rate_e9(i128 HARDCODED=0) + close_q(u128) + fee_bps(u64) +
- *   recovery_reason(u8) = 47 bytes.
+ *   recovery_reason(u8) = 53 bytes.
  *
  * CRITICAL: funding_rate_e9 is always hardcoded to 0n by this encoder.
  * The program hard-rejects any nonzero value with InvalidInstructionData.
@@ -951,7 +951,7 @@ export function encodeKeeperCrank(_args: KeeperCrankArgs): Uint8Array {
  * TradeNoCpi instruction data (v17 wire format).
  *
  * v17 wire: tag(1) + asset_index(u16) + size_q(i128) + exec_price(u64) + fee_bps(u64)
- *   = 28 bytes.
+ *   = 35 bytes.
  *
  * BREAKING vs v12.x: payload fields changed completely. v12 had lpIdx+userIdx+size;
  * v17 has asset_index+size_q+exec_price+fee_bps.
@@ -1065,7 +1065,7 @@ export function encodeTopUpInsurance(args: TopUpInsuranceArgs): Uint8Array {
  * TradeCpi instruction data (v17 wire format).
  *
  * v17 wire: tag(1) + asset_index(u16) + size_q(i128) + fee_bps(u64) + limit_price(u64)
- *   = 28 bytes.
+ *   = 35 bytes.
  *
  * BREAKING vs v12.x: payload fields changed. v12 had lpIdx+userIdx+size+limitPriceE6;
  * v17 has asset_index+size_q+fee_bps+limit_price.
@@ -2883,7 +2883,7 @@ export function encodeSetMatcherConfig(args: SetMatcherConfigArgs): Uint8Array {
 /**
  * RestartAssetOracle (tag 69) — permissionless oracle restart.
  *
- * Wire: tag(1) + asset_index(u16) + now_slot(u64) + initial_price(u64) = 20 bytes.
+ * Wire: tag(1) + asset_index(u16) + now_slot(u64) + initial_price(u64) = 19 bytes.
  *
  * Used to un-stick a stale or hung oracle. Anyone can call this.
  *

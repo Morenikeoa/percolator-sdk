@@ -146,8 +146,9 @@ export const ACCOUNTS_KEEPER_CRANK: readonly AccountSpec[] = [
  * program can credit the liquidation fee there. The keeper portfolio must be owned by
  * the same program and have a different key from accounts[2].
  *
- * Use buildPermissionlessCrankKeys() (in keeper) to assemble the full account list
- * including oracle tail and optional keeper portfolio.
+ * No SDK helper currently builds the full account list (base + variable oracle
+ * tail + optional keeper portfolio) — callers must assemble it manually by
+ * appending the oracle tail accounts described above to this base spec.
  */
 export const ACCOUNTS_PERMISSIONLESS_CRANK_BASE: readonly AccountSpec[] = [
   { name: "owner", signer: true, writable: true },
@@ -173,7 +174,7 @@ export const ACCOUNTS_RESTART_ASSET_ORACLE: readonly AccountSpec[] = [
 
 
 /**
- * TradeNoCpi (tag 9): 5 accounts.
+ * TradeNoCpi (tag 6): 5 accounts.
  *
  * v17 wire account layout (v16_program.rs handle_trade_nocpi):
  *   [0] signerA   signer, writable (party A — portfolio owner)
