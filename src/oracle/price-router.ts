@@ -298,6 +298,25 @@ export async function resolvePrice(
     fetchJupiterSource(mint, combinedSignal),
   ]);
 
+  // #227-class cross-validation, extended beyond the Pyth-enrichment path below:
+  // the original check only gated whether a Pyth source got enriched, so a token
+  // with no Pyth feed (the common case for permissionless markets) had its top DEX
+  // source ranked purely on self-reported liquidity, with no check against an
+  // independent reference. A single high-liquidity-labeled pool (manipulable via
+  // flash loan, per the SECURITY NOTE in dex-oracle.ts) could win bestSource
+  // outright even when Jupiter's aggregated price disagrees by an arbitrary amount.
+  // Cap the top DEX source's confidence to Jupiter's when they diverge beyond the
+  // same 50% threshold used for Pyth enrichment, so it can no longer outrank a
+  // disagreeing independent reference purely on liquidity. The source stays in
+  // allSources for transparency; only its ranking weight is reduced.
+  if (dexSources[0] && jupiterSource && dexSources[0].price > 0 && jupiterSource.price > 0) {
+    const mid = (dexSources[0].price + jupiterSource.price) / 2;
+    const deviation = Math.abs(dexSources[0].price - jupiterSource.price) / mid;
+    if (deviation > 0.5) {
+      dexSources[0].confidence = Math.min(dexSources[0].confidence, jupiterSource.confidence);
+    }
+  }
+
   const pythSource = lookupPythSource(mint);
 
   const allSources: PriceSource[] = [];
