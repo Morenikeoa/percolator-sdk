@@ -489,12 +489,25 @@ export const ACCOUNTS_SET_INSURANCE_WITHDRAW_POLICY: readonly AccountSpec[] = [
 ] as const;
 
 /**
- * UpdateAuthority (tag 83, v12.18.x 4-way split): 3 accounts.
- * Wrapper: src/percolator.rs:6876.
+ * UpdateAuthority (tag 32 in v17): 3 accounts.
+ *
+ * This constant's comment previously labeled it "tag 83, v12.18.x 4-way
+ * split" (the pre-v17 kind-routed authority instruction, removed — see
+ * instructions.ts encodeUpdateAuthority's "BREAKING vs v12.18.x: the kind
+ * byte is REMOVED" note). It is, however, the only account spec that
+ * matches the 3-account list encodeUpdateAuthority's own v17 doc comment
+ * requires ("Accounts: [currentAuth(signer), newAuth(signer),
+ * slab(writable)]") — relabeled to tag 32 accordingly. The account COUNT
+ * and SHAPE below are unchanged from before this relabel; only the
+ * stale tag/version label in this comment was corrected. Whether the v17
+ * wrapper's signer requirements differ from the old v12.18.x ones (e.g.
+ * given the kind-byte removal) has not been independently verified against
+ * percolator-prog source — flag for review if that source becomes available.
  *
  * Both the current authority and the new authority must sign. For burn
  * (`new_pubkey == default()`) the new account is still passed but does
- * not need to sign per wrapper L7036 region.
+ * not need to sign per wrapper L7036 region (v12.18.x reference; not
+ * reverified for v17).
  */
 export const ACCOUNTS_UPDATE_AUTHORITY: readonly AccountSpec[] = [
   { name: "currentAuthority", signer: true, writable: false },

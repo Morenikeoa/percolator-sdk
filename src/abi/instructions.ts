@@ -3062,6 +3062,9 @@ export function encodeLpVaultCrankFees(): Uint8Array {
  * ```
  */
 export function encodeSetLpVaultPaused(args: { paused: number }): Uint8Array {
+  if (args.paused !== 0 && args.paused !== 1) {
+    throw new Error(`encodeSetLpVaultPaused: paused must be 0 or 1, got ${args.paused}`);
+  }
   return concatBytes(encU8(IX_TAG.SetLpVaultPaused), encU8(args.paused));
 }
 
