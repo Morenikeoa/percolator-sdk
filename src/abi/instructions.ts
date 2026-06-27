@@ -1692,28 +1692,30 @@ export function encodeCancelQueuedWithdrawal(): Uint8Array {
 // ============================================================================
 
 /**
- * ExecuteAdl (Tag 50, PERC-305) — auto-deleverage the most profitable position.
+ * ExecuteAdl (PERC-305) — auto-deleverage the most profitable position.
  *
- * Permissionless. Surgically closes or reduces `targetIdx` position when
- * `pnl_pos_tot > max_pnl_cap` on the market. The caller receives no reward —
- * the incentive is unblocking the market for normal trading.
+ * On-chain semantics (for reference): permissionless, surgically closes or
+ * reduces `targetIdx` position when `pnl_pos_tot > max_pnl_cap` on the
+ * market. The caller receives no reward — the incentive is unblocking the
+ * market for normal trading. Requires `UpdateRiskParams.max_pnl_cap > 0`.
  *
- * Requires `UpdateRiskParams.max_pnl_cap > 0` on the market.
- *
- * Accounts: [caller(signer), slab(writable), clock, oracle, ...backupOracles?]
+ * **This encoder always throws — there is no working v17 encoder for
+ * ExecuteAdl in this SDK.** `IX_TAG.ExecuteAdl` is pinned to the old v12 tag
+ * 101, which the v17 wrapper does not accept; `encodeExecuteAdl()` calls
+ * `removedInstruction()` unconditionally regardless of `targetIdx`. Calling
+ * `buildAdlInstruction`/`buildAdlTransaction` in `src/solana/adl.ts` (which
+ * use this encoder) will also always throw. The read-side ranking helpers
+ * (`isAdlTriggered`, `rankAdlPositions`, `fetchAdlRankedPositions`) are
+ * unaffected and remain accurate.
  *
  * @param targetIdx - Account index of the position to deleverage.
- *
- * @example
- * ```ts
- * const data = encodeExecuteAdl({ targetIdx: 5 });
- * ```
+ * @throws always — see above.
  */
 export interface ExecuteAdlArgs {
   targetIdx: number;
 }
 
-/** @deprecated v12.x ExecuteAdl (old tag 101). Not in v17. */
+/** @deprecated Always throws — see the ExecuteAdlArgs doc comment above. v12.x ExecuteAdl (old tag 101) is not in v17; there is no working replacement encoder yet. */
 export function encodeExecuteAdl(_args: ExecuteAdlArgs): Uint8Array {
   return removedInstruction("ExecuteAdl (v12 tag 101 — not in v17)", IX_TAG.ExecuteAdl, undefined);
 }
