@@ -1031,7 +1031,21 @@ console.log("\nTesting instruction encoders...\n");
   assertBuf(pause, [79, 1], "SetLpVaultPaused(paused=1)");
   const unpause = encodeSetLpVaultPaused({ paused: 0 });
   assertBuf(unpause, [79, 0], "SetLpVaultPaused(paused=0)");
-  console.log("✓ encodeSetLpVaultPaused (v17 2-byte wire)");
+
+  // Regression: paused is a boolean-semantic u8 ("1 = paused, 0 = active" per
+  // its own doc comment), so out-of-range values must be rejected client-side —
+  // matching the established pattern for analogous fields (e.g. encodeSetMatcherConfig's
+  // `enabled` check) — rather than silently encoding a 2-byte payload like [79, 2].
+  let threw = false;
+  try {
+    encodeSetLpVaultPaused({ paused: 2 });
+  } catch (e) {
+    threw = true;
+    assert((e as Error).message.includes("must be 0 or 1"), "error message mentions valid range");
+  }
+  assert(threw, "encodeSetLpVaultPaused rejects paused=2");
+
+  console.log("✓ encodeSetLpVaultPaused (v17 2-byte wire, rejects out-of-range paused)");
 }
 
 // CloseLpVault (tag 80) — 1 byte
